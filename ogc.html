@@ -1,0 +1,157 @@
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+    <title>Whales!</title>
+
+    <style>
+        html,
+        body,
+        #viewDiv {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+            width: 100%;
+        }
+
+        #timeSlider {
+            position: fixed;
+            left: 5%;
+            right: 5%;
+        }
+    </style>
+
+    <link rel="stylesheet" href="https://js.arcgis.com/4.25/esri/themes/light/main.css" />
+    <script src="https://js.arcgis.com/4.25/"></script>
+
+    <script>
+        require(["esri/Map", "esri/views/MapView", "esri/layers/WFSLayer", "esri/smartMapping/renderers/type", "esri/widgets/Legend", "esri/widgets/TimeSlider", "esri/layers/support/FeatureEffect", "esri/layers/support/FeatureFilter"], (
+            Map,
+            MapView,
+            WFSLayer,
+            typeRendererCreator,
+            Legend,
+            TimeSlider,
+            FeatureEffect,
+            FeatureFilter
+        ) => {
+            const whaleLayer = new WFSLayer({
+                url: "https://geo.pacioos.hawaii.edu/geoserver/PACIOOS/PACIOOS:hi_pacioos_all_whales/ows",
+                copyright: "Pacific Islands Ocean Observing System (PacIOOS)",
+                title: "Species Distribution: Whales - Hawaii",
+                popupTemplate: {
+                    title: '{num_seen} {species}s',
+                    content: [
+                        {
+                            type: "fields",
+                            fieldInfos: [
+                                {
+                                    fieldName: 'date',
+                                    label: 'Date observed or recorded'
+                                },
+                                {
+                                    fieldName: 'obs_method',
+                                    label: 'Observation method'
+                                },
+                                {
+                                    fieldName: 'source',
+                                    label: 'Source'
+                                }
+                            ]
+                        }
+                    ]
+                }
+            });
+
+            const map = new Map({
+                basemap: "oceans",
+                layers: [whaleLayer],
+                ground: "world-elevation"
+            });
+
+            const view = new MapView({
+                container: "viewDiv",
+                map: map,
+                center: [-157.04906, 21.07352],
+                zoom: 7
+            });
+
+            const legend = new Legend({
+                view: view
+            })
+
+            // initialize the TimeSlider widget
+            const timeSlider = new TimeSlider({
+                container: "timeSlider",
+                view: view,
+                timeVisible: true, // show the time stamps on the timeslider
+                fullTimeExtent: {
+                    start: '2000-01-02',
+                    end: '2019-01-01'
+                },
+                stops: {
+                    interval: {
+                        value: 1,
+                        unit: 'years'
+                    }
+                },
+            });
+
+            timeSlider.watch("timeExtent", (timeExtent) => {
+                // use feature effect to highlight whale records within certain time frames
+                // date is the field that contains time information
+                const effect = new FeatureEffect({
+                    filter: new FeatureFilter({
+                        where: " date > '" + timeExtent.start.toISOString() + "' AND date < '" + timeExtent.end.toISOString() + "'"
+                    }),
+                    // TODO: find the bet combination
+                    includedEffect: "bloom(0.3 1pt 0)",
+                    excludedEffect: "grayscale(50%) blur(5px) opacity(30%)"
+                });
+                whaleLayer.featureEffect = effect;
+            });
+
+            // use smart mapping to create unique value renderer based on species
+            const typeParams = {
+                layer: whaleLayer,
+                view: view,
+                field: "species",
+                legendOptions: {
+                    title: "Whale Species"
+                }
+            };
+
+            typeRendererCreator
+                .createRenderer(typeParams)
+                .then((response) => {
+                    response.renderer.visualVariables = [{
+                        type: "size",
+                        field: "num_seen",
+                        legendOptions: {
+                            title: "Number of Seen Whales"
+                        },
+                        stops: [
+                            { value: 1, size: 5, label: "1" },
+                            { value: 10, size: 20, label: "10" },
+                            { value: 50, size: 50, label: "> 50" }
+                        ]
+                    }];
+                    whaleLayer.renderer = response.renderer;
+                })
+                .catch((error) => {
+                    console.error("there was an error: ", error);
+                });
+
+            view.ui.add(legend, "top-right");
+            view.ui.add(timeSlider, "bottom-leading");
+        });
+    </script>
+</head>
+
+<body>
+    <div id="viewDiv"></div>
+    <div id="timeSlider"></div>
+</body>
+
+</html>
