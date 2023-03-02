@@ -20,6 +20,10 @@
             left: 5%;
             right: 5%;
         }
+
+        .esri-view-height-medium .esri-ui-corner .esri-component.esri-widget--panel {
+            max-height: 100% !important;
+        }
     </style>
 
     <link rel="stylesheet" href="https://js.arcgis.com/4.25/esri/themes/light/main.css" />
@@ -45,7 +49,7 @@
                 copyright: "Pacific Islands Ocean Observing System (PacIOOS), R.W. Baird, J.R. Mobley, E. Oleson, and J. Barlow. 2018, updated 2020. Species Distribution: Whales - Hawaii. Distributed by the Pacific Islands Ocean Observing System (PacIOOS). http://pacioos.org/metadata/hi_pacioos_all_whales.html. Data provided by PacIOOS (www.pacioos.org), which is a part of the U.S. Integrated Ocean Observing System (IOOS®), funded in part by National Oceanic and Atmospheric Administration (NOAA) Awards #NA16NOS0120024 and #NA21NOS0120091. Accessed 02/16/2023",
                 title: "Species Distribution: Whales - Hawaii",
                 popupTemplate: {
-                    title: '{num_seen} {species}s',
+                    title: '{species} ({num_seen})',
                     outFields: ['*'],
                     fieldInfos: [
                         {
